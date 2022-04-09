@@ -1,6 +1,8 @@
 import * as anchor from '@project-serum/anchor';
 import { Program } from '@project-serum/anchor';
+import { bs58 } from '@project-serum/anchor/dist/cjs/utils/bytes';
 import { assert } from 'chai';
+import { it } from 'mocha';
 import { SolanaTwitter } from '../target/types/solana_twitter';
 
 describe('solana-twitter', () => {
@@ -64,9 +66,7 @@ describe('solana-twitter', () => {
     );
     await program.provider.connection.confirmTransaction(signature);
 
-    console.log('new user');
-
-    const tx = await program.rpc.sendTweet('veganism', 'Hummus, am I right?', {
+    await program.rpc.sendTweet('veganism', 'Hummus, am I right?', {
       accounts: {
         tweet: tweet.publicKey,
         author: otherUser.publicKey,
@@ -139,5 +139,43 @@ describe('solana-twitter', () => {
   it('can fetch all tweets', async () => {
     const tweetAccount = await program.account.tweet.all();
     assert.equal(tweetAccount.length, 3);
+  });
+
+  it('can filter tweets by author', async () => {
+    const authorPubicKey = program.provider.wallet.publicKey;
+    const tweetAccounts = await program.account.tweet.all([
+      {
+        memcmp: {
+          offset: 8,
+          bytes: authorPubicKey.toBase58(),
+        },
+      },
+    ]);
+
+    assert.equal(tweetAccounts.length, 2);
+    assert.ok(
+      tweetAccounts.every((tweetAccount) => {
+        return (
+          tweetAccount.account.author.toBase58() === authorPubicKey.toBase58()
+        );
+      })
+    );
+  });
+  it('can filter tweets by topics', async () => {
+    const tweetAccounts = await program.account.tweet.all([
+      {
+        memcmp: {
+          offset: 8 + 32 + 8 + 4,
+          bytes: bs58.encode(Buffer.from('veganism')),
+        },
+      },
+    ]);
+
+    assert.equal(tweetAccounts.length, 2);
+    assert.ok(
+      tweetAccounts.every((tweetAccount) => {
+        return tweetAccount.account.topic === 'veganism';
+      })
+    );
   });
 });
