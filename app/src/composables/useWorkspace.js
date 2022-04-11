@@ -19,4 +19,6 @@ export const initWorkspace = () => {
     provider,
     program,
   };
+
+  return workspace;
 };
