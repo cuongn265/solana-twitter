@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watchEffect } from "vue";
-import { fetchTweets } from "@/api";
+import { authorFilter, fetchTweets } from "@/api";
 import TweetForm from "@/components/TweetForm";
 import TweetList from "@/components/TweetList";
 import { useWorkspace } from "../composables";
@@ -12,7 +12,9 @@ const { wallet } = useWorkspace();
 const { connected } = useWallet()
 
 watchEffect(() => {
-  fetchTweets()
+  if (!wallet.value) return
+
+  fetchTweets([authorFilter(wallet.value.publicKey.toBase58())])
     .then((fetchedTweets) => (tweets.value = fetchedTweets))
     .finally(() => (loading.value = false));
 });
