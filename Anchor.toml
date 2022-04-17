@@ -10,7 +10,7 @@ solana_twitter = "91Akrzp5257wNcvVWkCEikzN5yqEZUAaXtRYaWnukZhe"
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "/Users/cuongngo/.config/solana/id.json"
 
 [scripts]

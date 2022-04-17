@@ -4,6 +4,7 @@
     "jsx": "preserve",
     "module": "esnext",
     "baseUrl": "./",
+    "allowJs": true,
     "moduleResolution": "node",
     "paths": {
       "@/*": [

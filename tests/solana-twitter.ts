@@ -1,11 +1,22 @@
+import { SolanaTwitter } from './../app/src/idl/solana_twitter';
 import * as anchor from '@project-serum/anchor';
 import { Program } from '@project-serum/anchor';
 import { bs58 } from '@project-serum/anchor/dist/cjs/utils/bytes';
 import { assert } from 'chai';
-import { it } from 'mocha';
-import { SolanaTwitter } from '../target/types/solana_twitter';
 
 describe('solana-twitter', () => {
+  const sendTweet = async (author, topic, content) => {
+    const tweet = anchor.web3.Keypair.generate();
+    await program.rpc.sendTweet(topic, content, {
+      accounts: {
+        tweet: tweet.publicKey,
+        author,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      },
+      signers: [tweet],
+    });
+    return tweet;
+  };
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.Provider.env());
 
@@ -177,5 +188,57 @@ describe('solana-twitter', () => {
         return tweetAccount.account.topic === 'veganism';
       })
     );
+  });
+  it('can update a tweet', async () => {
+    const author = program.provider.wallet.publicKey;
+    const tweet = await sendTweet(author, 'web2', 'hello world!');
+    const tweetAccount = await program.account.tweet.fetch(tweet.publicKey);
+
+    assert.equal(
+      tweetAccount.author.toBase58(),
+      program.provider.wallet.publicKey.toBase58()
+    );
+    assert.equal(tweetAccount.topic, 'web2');
+    assert.equal(tweetAccount.content, 'hello world!');
+    assert.ok(tweetAccount.timestamp);
+
+    await program.rpc.updateTweet('solana', 'gm everyone!', {
+      accounts: {
+        author,
+        tweet: tweet.publicKey,
+      },
+    });
+
+    const updatedTweetAccount = await program.account.tweet.fetch(
+      tweet.publicKey
+    );
+    assert.equal(updatedTweetAccount.topic, 'solana');
+    assert.equal(updatedTweetAccount.content, 'gm everyone!');
+  });
+  it("cannot update someone's else tweet", async () => {
+    const author = program.provider.wallet.publicKey;
+    const tweet = await sendTweet(author, 'solana', 'Solana is awesome');
+    const tweetAccount = await program.account.tweet.fetch(tweet.publicKey);
+
+    assert.equal(
+      tweetAccount.author.toBase58(),
+      program.provider.wallet.publicKey.toBase58()
+    );
+    assert.equal(tweetAccount.topic, 'solana');
+    assert.equal(tweetAccount.content, 'Solana is awesome');
+    assert.ok(tweetAccount.timestamp);
+
+    try {
+      await program.rpc.updateTweet('eth', 'Etherium is awesome', {
+        accounts: {
+          author: anchor.web3.Keypair.generate().publicKey,
+          tweet: tweet.publicKey,
+        },
+      });
+    } catch (error) {
+      const tweetAccount = await program.account.tweet.fetch(tweet.publicKey);
+      assert.equal(tweetAccount.topic, 'solana');
+      assert.equal(tweetAccount.content, 'Solana is awesome');
+    }
   });
 });
