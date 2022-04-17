@@ -5,7 +5,11 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "serve:devnet": "vue-cli-service serve --mode devnet",
+    "serve:mainnet": "vue-cli-service serve --mode mainnet",
+    "build:devnet": "vue-cli-service build --mode devnet",
+    "build:mainnet": "vue-cli-service build --mode mainnet"
   },
   "dependencies": {
     "@project-serum/anchor": "^0.23.0",
